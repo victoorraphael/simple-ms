@@ -1,6 +1,16 @@
 version: '3'
 
 services:
+  db:
+    image: postgres:14.2-alpine
+    environment:
+      - POSTGRES_USER=usuario
+      - POSTGRES_PASSWORD=supersecret
+      - POSTGRES_DB=poc
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   users:
     container_name: "users"
     restart: always
@@ -9,6 +19,8 @@ services:
       dockerfile: "users.Dockerfile"
     ports:
     - "8001:80"
+    depends_on:
+      - db
   orders:
     container_name: "orders"
     restart: always
@@ -17,3 +29,9 @@ services:
       dockerfile: "orders.Dockerfile"
     ports:
       - "8000:80"
+    depends_on:
+      - db
+
+volumes:
+  db-data:
+    driver: local
