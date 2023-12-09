@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  users:
+    container_name: "users"
+    restart: always
+    build:
+      context: "."
+      dockerfile: "users.Dockerfile"
+    ports:
+    - "8001:80"
+  orders:
+    container_name: "orders"
+    restart: always
+    build:
+      context: "."
+      dockerfile: "orders.Dockerfile"
+    ports:
+      - "8000:80"
