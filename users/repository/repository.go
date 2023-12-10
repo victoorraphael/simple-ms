@@ -5,6 +5,7 @@ import (
 	"github.com/gocraft/dbr/v2"
 	"github.com/victoorraphael/simple-ms/adapters/database"
 	"github.com/victoorraphael/simple-ms/users/entities"
+	"github.com/victoorraphael/simple-ms/utils"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type UserRepo interface {
 	Create(ctx context.Context, user entities.User) (int64, error)
 	Update(ctx context.Context, user entities.User) error
 	Delete(ctx context.Context, id int64) error
+	Search(ctx context.Context, filter entities.User) (entities.User, error)
 }
 
 func New(provider database.Provider[*dbr.Session]) UserRepo {
@@ -26,6 +28,21 @@ func New(provider database.Provider[*dbr.Session]) UserRepo {
 type Provider struct {
 	conn  database.Provider[*dbr.Session]
 	table string
+}
+
+func (p *Provider) Search(ctx context.Context, filter entities.User) (entities.User, error) {
+	query, values, err := utils.BuildSearchQuery(filter)
+	if err != nil {
+		return filter, err
+	}
+
+	var resp entities.User
+	errQuery := p.conn.Exec().
+		Select("*").
+		From(p.table).
+		Where(query, values...).
+		LoadOneContext(ctx, &resp)
+	return resp, errQuery
 }
 
 func (p *Provider) List(ctx context.Context) ([]entities.User, error) {
@@ -61,8 +78,15 @@ func (p *Provider) Create(ctx context.Context, user entities.User) (int64, error
 }
 
 func (p *Provider) Update(ctx context.Context, user entities.User) error {
-	//TODO implement me
-	panic("implement me")
+	_, err := p.conn.Exec().
+		Update(p.table).
+		Set("name", user.Name).
+		Set("email", user.Email).
+		Set("phone_number", user.Phone).
+		Set("updated_at", time.Now()).
+		Where("id = ?", user.ID).
+		ExecContext(ctx)
+	return err
 }
 
 func (p *Provider) Delete(ctx context.Context, id int64) error {
